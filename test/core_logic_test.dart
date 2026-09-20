@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:vietnam_handbook/core/fx/fx_rates.dart';
 import 'package:vietnam_handbook/core/trip/trip_dates.dart';
 import 'package:vietnam_handbook/features/budget/domain/entities/budget_entities.dart';
+import 'package:vietnam_handbook/features/itinerary/presentation/cubit/tipping_cubit.dart';
 import 'package:vietnam_handbook/features/settings/domain/entities/app_settings.dart';
 
 void main() {
@@ -126,6 +127,27 @@ void main() {
       });
       expect(restored.themeMode, AppThemeMode.system);
       expect(restored.colorScheme, AppSettings.defaultColorScheme);
+    });
+  });
+
+  group('TippingState', () {
+    test('defaults to USD 1.5 per person for 9 people', () {
+      const state = TippingState(isLoading: false);
+      expect(state.pax, 9);
+      expect(state.perPersonUsd, 1.5);
+      expect(state.totalUsd, 13.5);
+      expect(state.isPreset(TippingCubit.halfDayUsd), isTrue);
+      expect(state.totalVnd, closeTo(13.5 * FxRates.defaults.usdToVnd, 0.01));
+      expect(state.totalNpr, closeTo(13.5 * FxRates.defaults.usdToNpr, 0.01));
+    });
+
+    test('full-day preset is USD 27 for the group', () {
+      const state = TippingState(
+        perPersonUsd: TippingCubit.fullDayUsd,
+        isLoading: false,
+      );
+      expect(state.totalUsd, 27);
+      expect(state.isPreset(TippingCubit.fullDayUsd), isTrue);
     });
   });
 }

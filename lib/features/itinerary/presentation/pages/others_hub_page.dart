@@ -10,16 +10,10 @@ class OthersHubPage extends StatelessWidget {
     final theme = ShadTheme.of(context);
     final items = [
       (
-        'Itinerary',
-        'Day-by-day package details',
-        LucideIcons.map,
-        '/others/itinerary',
-      ),
-      (
-        'Vouchers',
-        'Confirmed hotels, cruise, flights & services',
-        LucideIcons.ticket,
-        '/others/vouchers',
+        'Package costs',
+        'USD / NPR breakdown',
+        LucideIcons.receipt,
+        '/others/costs',
       ),
       (
         'Hotels & cruise',
@@ -34,10 +28,22 @@ class OthersHubPage extends StatelessWidget {
         '/others/inclusions',
       ),
       (
-        'Package costs',
-        'USD / NPR breakdown',
-        LucideIcons.receipt,
-        '/others/costs',
+        'Itinerary',
+        'Day-by-day package details',
+        LucideIcons.map,
+        '/others/itinerary',
+      ),
+      (
+        'Vouchers',
+        'Confirmed hotels, cruise, flights & services',
+        LucideIcons.ticket,
+        '/others/vouchers',
+      ),
+      (
+        'Tipping calculator',
+        'USD 1.5 / 3 per person × 9 people',
+        LucideIcons.handCoins,
+        '/others/tipping',
       ),
       (
         'FX rates',
