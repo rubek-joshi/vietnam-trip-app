@@ -10,12 +10,14 @@ class ChecklistState extends Equatable {
     this.items = const [],
     this.currentDay = 1,
     this.isLoading = true,
+    this.isReordering = false,
     this.message,
   });
 
   final List<ChecklistItem> items;
   final int currentDay;
   final bool isLoading;
+  final bool isReordering;
   final String? message;
 
   List<ChecklistItem> get dayItems =>
@@ -26,6 +28,7 @@ class ChecklistState extends Equatable {
     List<ChecklistItem>? items,
     int? currentDay,
     bool? isLoading,
+    bool? isReordering,
     String? message,
     bool clearMessage = false,
   }) {
@@ -33,17 +36,24 @@ class ChecklistState extends Equatable {
       items: items ?? this.items,
       currentDay: currentDay ?? this.currentDay,
       isLoading: isLoading ?? this.isLoading,
+      isReordering: isReordering ?? this.isReordering,
       message: clearMessage ? null : (message ?? this.message),
     );
   }
 
   @override
-  List<Object?> get props => [items, currentDay, isLoading, message];
+  List<Object?> get props => [
+    items,
+    currentDay,
+    isLoading,
+    isReordering,
+    message,
+  ];
 }
 
 class ChecklistCubit extends Cubit<ChecklistState> {
   ChecklistCubit(this._repository)
-      : super(ChecklistState(currentDay: TripDates.activeDay()));
+    : super(ChecklistState(currentDay: TripDates.activeDay()));
 
   final ChecklistRepository _repository;
   final _uuid = const Uuid();
@@ -62,6 +72,38 @@ class ChecklistCubit extends Cubit<ChecklistState> {
   }
 
   void setDay(int day) => emit(state.copyWith(currentDay: day));
+
+  void toggleReorderMode() =>
+      emit(state.copyWith(isReordering: !state.isReordering));
+
+  Future<void> reorder(int oldIndex, int newIndex) async {
+    if (newIndex > oldIndex) newIndex -= 1;
+    if (oldIndex == newIndex) return;
+
+    final dayItems = [...state.dayItems];
+    if (oldIndex < 0 ||
+        oldIndex >= dayItems.length ||
+        newIndex < 0 ||
+        newIndex >= dayItems.length) {
+      return;
+    }
+
+    final moved = dayItems.removeAt(oldIndex);
+    dayItems.insert(newIndex, moved);
+    final reindexed = [
+      for (var i = 0; i < dayItems.length; i++) dayItems[i].copyWith(order: i),
+    ];
+    final byId = {for (final item in reindexed) item.id: item};
+    emit(
+      state.copyWith(
+        items: [for (final item in state.items) byId[item.id] ?? item],
+      ),
+    );
+    for (final item in reindexed) {
+      final result = await _repository.upsert(item);
+      result.fold((f) => emit(state.copyWith(message: f.message)), (_) {});
+    }
+  }
 
   Future<void> toggle(ChecklistItem item) async {
     final updated = item.copyWith(done: !item.done);
@@ -98,15 +140,12 @@ class ChecklistCubit extends Cubit<ChecklistState> {
 
   Future<void> _upsertLocal(ChecklistItem item) async {
     final result = await _repository.upsert(item);
-    result.fold(
-      (f) => emit(state.copyWith(message: f.message)),
-      (_) {
-        final exists = state.items.any((e) => e.id == item.id);
-        final list = exists
-            ? state.items.map((e) => e.id == item.id ? item : e).toList()
-            : [...state.items, item];
-        emit(state.copyWith(items: list));
-      },
-    );
+    result.fold((f) => emit(state.copyWith(message: f.message)), (_) {
+      final exists = state.items.any((e) => e.id == item.id);
+      final list = exists
+          ? state.items.map((e) => e.id == item.id ? item : e).toList()
+          : [...state.items, item];
+      emit(state.copyWith(items: list));
+    });
   }
 }

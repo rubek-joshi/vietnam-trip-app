@@ -23,87 +23,174 @@ class _ChecklistView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Daily checklist')),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showEditSheet(context),
-        child: const Icon(LucideIcons.plus),
-      ),
-      body: BlocBuilder<ChecklistCubit, ChecklistState>(
-        builder: (context, state) {
-          if (state.isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          return DayPager(
-            initialDay: state.currentDay,
-            onDayChanged: (day) => context.read<ChecklistCubit>().setDay(day),
-            builder: (context, day) {
-              final items = state.items
-                  .where((e) => e.day == day)
-                  .toList()
-                ..sort((a, b) => a.order.compareTo(b.order));
-              if (items.isEmpty) {
-                return Center(
-                  child: Text(
-                    'No items for Day $day.\nTap + to add one.',
-                    textAlign: TextAlign.center,
-                    style: ShadTheme.of(context).textTheme.muted,
-                  ),
-                );
-              }
-              return ListView.separated(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 88),
-                itemCount: items.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 8),
-                itemBuilder: (context, index) {
-                  final item = items[index];
-                  return _ChecklistTile(item: item);
-                },
-              );
-            },
-          );
-        },
-      ),
+    return BlocBuilder<ChecklistCubit, ChecklistState>(
+      builder: (context, state) {
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('Daily checklist'),
+            actions: [
+              IconButton(
+                tooltip: state.isReordering
+                    ? 'Done reordering'
+                    : 'Reorder items',
+                isSelected: state.isReordering,
+                icon: Icon(
+                  state.isReordering
+                      ? LucideIcons.check
+                      : LucideIcons.listOrdered,
+                ),
+                onPressed: state.isLoading
+                    ? null
+                    : () => context.read<ChecklistCubit>().toggleReorderMode(),
+              ),
+            ],
+          ),
+          floatingActionButton: state.isReordering
+              ? null
+              : FloatingActionButton(
+                  onPressed: () => _showEditSheet(context),
+                  child: const Icon(LucideIcons.plus),
+                ),
+          body: state.isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : DayPager(
+                  initialDay: state.currentDay,
+                  pagePhysics: state.isReordering
+                      ? const NeverScrollableScrollPhysics()
+                      : null,
+                  onDayChanged: (day) =>
+                      context.read<ChecklistCubit>().setDay(day),
+                  builder: (context, day) {
+                    final items =
+                        state.items.where((e) => e.day == day).toList()
+                          ..sort((a, b) => a.order.compareTo(b.order));
+                    if (items.isEmpty) {
+                      return Center(
+                        child: Text(
+                          state.isReordering
+                              ? 'Nothing to reorder on Day $day.'
+                              : 'No items for Day $day.\nTap + to add one.',
+                          textAlign: TextAlign.center,
+                          style: ShadTheme.of(context).textTheme.muted,
+                        ),
+                      );
+                    }
+                    if (state.isReordering) {
+                      return ReorderableListView.builder(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                        buildDefaultDragHandles: false,
+                        itemCount: items.length,
+                        onReorder: (oldIndex, newIndex) => context
+                            .read<ChecklistCubit>()
+                            .reorder(oldIndex, newIndex),
+                        proxyDecorator: (child, index, animation) {
+                          return AnimatedBuilder(
+                            animation: animation,
+                            builder: (context, _) {
+                              return Material(
+                                elevation: 2 * animation.value,
+                                color: Colors.transparent,
+                                child: child,
+                              );
+                            },
+                          );
+                        },
+                        itemBuilder: (context, index) {
+                          final item = items[index];
+                          return Padding(
+                            key: ValueKey(item.id),
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: _ChecklistTile(
+                              item: item,
+                              index: index,
+                              reordering: true,
+                            ),
+                          );
+                        },
+                      );
+                    }
+                    return ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 88),
+                      itemCount: items.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 8),
+                      itemBuilder: (context, index) {
+                        final item = items[index];
+                        return _ChecklistTile(item: item, index: index);
+                      },
+                    );
+                  },
+                ),
+        );
+      },
     );
   }
 }
 
 class _ChecklistTile extends StatelessWidget {
-  const _ChecklistTile({required this.item});
+  const _ChecklistTile({
+    required this.item,
+    required this.index,
+    this.reordering = false,
+  });
 
   final ChecklistItem item;
+  final int index;
+  final bool reordering;
 
   @override
   Widget build(BuildContext context) {
     final theme = ShadTheme.of(context);
+    final title = Text(
+      item.title,
+      style: theme.textTheme.p.copyWith(
+        decoration: item.done ? TextDecoration.lineThrough : null,
+        color: item.done
+            ? theme.colorScheme.mutedForeground
+            : theme.colorScheme.foreground,
+      ),
+    );
+
     return ShadCard(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: Row(
         children: [
-          ShadCheckbox(
-            value: item.done,
-            onChanged: (_) => context.read<ChecklistCubit>().toggle(item),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              item.title,
-              style: theme.textTheme.p.copyWith(
-                decoration: item.done ? TextDecoration.lineThrough : null,
-                color: item.done
-                    ? theme.colorScheme.mutedForeground
-                    : theme.colorScheme.foreground,
+          if (reordering) ...[
+            ReorderableDragStartListener(
+              index: index,
+              child: Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: Icon(
+                  LucideIcons.gripVertical,
+                  color: theme.colorScheme.mutedForeground,
+                ),
               ),
             ),
-          ),
-          ShadIconButton.ghost(
-            icon: const Icon(LucideIcons.pencil, size: 18),
-            onPressed: () => _showEditSheet(context, item: item),
-          ),
-          ShadIconButton.ghost(
-            icon: const Icon(LucideIcons.trash2, size: 18),
-            onPressed: () => context.read<ChecklistCubit>().remove(item.id),
-          ),
+            Expanded(child: title),
+          ] else ...[
+            ShadCheckbox(
+              value: item.done,
+              onChanged: (_) => context.read<ChecklistCubit>().toggle(item),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => context.read<ChecklistCubit>().toggle(item),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: title,
+                ),
+              ),
+            ),
+            ShadIconButton.ghost(
+              icon: const Icon(LucideIcons.pencil, size: 18),
+              onPressed: () => _showEditSheet(context, item: item),
+            ),
+            ShadIconButton.ghost(
+              icon: const Icon(LucideIcons.trash2, size: 18),
+              onPressed: () => context.read<ChecklistCubit>().remove(item.id),
+            ),
+          ],
         ],
       ),
     );

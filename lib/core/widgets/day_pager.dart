@@ -11,11 +11,13 @@ class DayPager extends StatefulWidget {
     required this.builder,
     this.initialDay,
     this.onDayChanged,
+    this.pagePhysics,
   });
 
   final DayPageBuilder builder;
   final int? initialDay;
   final ValueChanged<int>? onDayChanged;
+  final ScrollPhysics? pagePhysics;
 
   @override
   State<DayPager> createState() => _DayPagerState();
@@ -69,8 +71,10 @@ class _DayPagerState extends State<DayPager> {
                 onTap: () => _goToDay(day),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 180),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: selected
                         ? theme.colorScheme.primary
@@ -84,8 +88,9 @@ class _DayPagerState extends State<DayPager> {
                         color: selected
                             ? theme.colorScheme.primaryForeground
                             : theme.colorScheme.mutedForeground,
-                        fontWeight:
-                            selected ? FontWeight.w600 : FontWeight.w500,
+                        fontWeight: selected
+                            ? FontWeight.w600
+                            : FontWeight.w500,
                       ),
                     ),
                   ),
@@ -107,6 +112,7 @@ class _DayPagerState extends State<DayPager> {
         Expanded(
           child: PageView.builder(
             controller: _controller,
+            physics: widget.pagePhysics,
             itemCount: TripDates.totalDays,
             onPageChanged: (index) {
               final day = index + 1;

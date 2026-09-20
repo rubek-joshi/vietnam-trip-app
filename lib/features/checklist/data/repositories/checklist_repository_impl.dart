@@ -13,11 +13,12 @@ class ChecklistRepositoryImpl implements ChecklistRepository {
   @override
   Future<Either<Failure, List<ChecklistItem>>> getAll() async {
     try {
-      final items = _box.values
-          .whereType<Map>()
-          .map((e) => ChecklistItem.fromJson(Map<dynamic, dynamic>.from(e)))
-          .toList()
-        ..sort((a, b) => a.order.compareTo(b.order));
+      final items =
+          _box.values
+              .whereType<Map>()
+              .map((e) => ChecklistItem.fromJson(Map<dynamic, dynamic>.from(e)))
+              .toList()
+            ..sort((a, b) => a.order.compareTo(b.order));
       return Right(items);
     } catch (e) {
       return Left(CacheFailure(e.toString()));

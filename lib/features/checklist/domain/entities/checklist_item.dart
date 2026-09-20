@@ -32,12 +32,12 @@ class ChecklistItem extends Equatable {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'day': day,
-        'title': title,
-        'done': done,
-        'order': order,
-      };
+    'id': id,
+    'day': day,
+    'title': title,
+    'done': done,
+    'order': order,
+  };
 
   factory ChecklistItem.fromJson(Map<dynamic, dynamic> json) {
     return ChecklistItem(
