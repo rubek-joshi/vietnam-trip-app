@@ -68,20 +68,20 @@ class VouchersPage extends StatelessWidget {
           ...voucherStays.map(
             (s) => Padding(
               padding: const EdgeInsets.only(bottom: 10),
-              child: ShadCard(
-                title: Text(s.property),
-                description: Text(
-                  '${s.from} → ${s.to} · ${s.nights} night${s.nights == 1 ? '' : 's'}',
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('${s.room} · ${s.meals} · ${VoucherMeta.occupancy}'),
-                      const SizedBox(height: 8),
-                      _ConfirmCode(code: s.confirmCode),
-                    ],
+              child: InkWell(
+                onTap: () => _showConfirmCodeDialog(context, s),
+                borderRadius: BorderRadius.circular(12),
+                child: ShadCard(
+                  title: Text(s.property),
+                  description: Text(
+                    '${s.from} → ${s.to} · ${s.nights} night${s.nights == 1 ? '' : 's'}',
+                  ),
+                  trailing: const Icon(LucideIcons.chevronRight),
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(
+                      '${s.room} · ${s.meals} · ${VoucherMeta.occupancy}',
+                    ),
                   ),
                 ),
               ),
@@ -183,28 +183,54 @@ class VouchersPage extends StatelessWidget {
   }
 }
 
+void _showConfirmCodeDialog(BuildContext context, VoucherStay stay) {
+  final theme = ShadTheme.of(context);
+  final dialogWidth = MediaQuery.sizeOf(context).width - 48;
+
+  showShadDialog<void>(
+    context: context,
+    barrierDismissible: true,
+    builder: (dialogContext) {
+      return ShadDialog(
+        closeIconData: LucideIcons.x,
+        useSafeArea: false,
+        scrollable: false,
+        alignment: Alignment.center,
+        constraints: BoxConstraints.tightFor(width: dialogWidth),
+        padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+        title: Text(stay.property),
+        description: Text('${stay.from} → ${stay.to}'),
+        child: Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Confirmation code', style: theme.textTheme.muted),
+              const SizedBox(height: 8),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  stay.confirmCode,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.h1.copyWith(
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.2,
+                    fontSize: 44,
+                    height: 1.1,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
 void _copy(BuildContext context, String text) {
   Clipboard.setData(ClipboardData(text: text));
   ScaffoldMessenger.of(
     context,
   ).showSnackBar(const SnackBar(content: Text('Copied')));
-}
-
-class _ConfirmCode extends StatelessWidget {
-  const _ConfirmCode({required this.code});
-
-  final String code;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        ShadBadge(child: Text('Confirm $code')),
-        ShadIconButton.ghost(
-          icon: const Icon(LucideIcons.copy, size: 16),
-          onPressed: () => _copy(context, code),
-        ),
-      ],
-    );
-  }
 }

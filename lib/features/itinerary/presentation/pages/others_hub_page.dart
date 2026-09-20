@@ -65,10 +65,33 @@ class OthersHubPage extends StatelessWidget {
             onTap: () => context.push(item.$4),
             borderRadius: BorderRadius.circular(12),
             child: ShadCard(
-              leading: Icon(item.$3),
-              title: Text(item.$1),
-              description: Text(item.$2, style: theme.textTheme.muted),
-              trailing: const Icon(LucideIcons.chevronRight),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 28,
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Icon(item.$3, size: 20),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(item.$1),
+                        Text(item.$2, style: theme.textTheme.muted),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Icon(
+                    LucideIcons.chevronRight,
+                    color: theme.colorScheme.mutedForeground,
+                  ),
+                ],
+              ),
             ),
           );
         },
