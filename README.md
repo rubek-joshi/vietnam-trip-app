@@ -8,7 +8,7 @@ Offline Flutter trip companion for **Danang – Hoi An – Hanoi – Halong Bay*
 2. **Checklist** — Swipeable Day 1–7 todos (opens on the active trip day)
 3. **Budget** — Dual wallets (VND default + USD), USD→VND exchanges, expenses with live NPR, remaining balance + stats
 4. **Phrases** — Offline English ↔ Vietnamese travel dictionary
-5. **Others** — Package itinerary, hotels, inclusions, costs, FX rate editor, settings (theme + color scheme)
+5. **Others** — Package itinerary, vouchers (hotels/cruise/flights), hotels, inclusions, costs, FX rate editor, settings (theme + color scheme)
 
 ## Run
 

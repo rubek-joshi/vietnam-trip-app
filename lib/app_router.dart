@@ -11,6 +11,7 @@ import 'package:vietnam_handbook/features/itinerary/presentation/pages/hotels_pa
 import 'package:vietnam_handbook/features/itinerary/presentation/pages/inclusions_page.dart';
 import 'package:vietnam_handbook/features/itinerary/presentation/pages/itinerary_page.dart';
 import 'package:vietnam_handbook/features/itinerary/presentation/pages/others_hub_page.dart';
+import 'package:vietnam_handbook/features/itinerary/presentation/pages/vouchers_page.dart';
 import 'package:vietnam_handbook/features/phrases/presentation/pages/phrases_page.dart';
 import 'package:vietnam_handbook/features/settings/presentation/pages/settings_page.dart';
 
@@ -77,6 +78,11 @@ GoRouter createRouter() {
                     path: 'itinerary',
                     parentNavigatorKey: _rootNavigatorKey,
                     builder: (context, state) => const ItineraryPage(),
+                  ),
+                  GoRoute(
+                    path: 'vouchers',
+                    parentNavigatorKey: _rootNavigatorKey,
+                    builder: (context, state) => const VouchersPage(),
                   ),
                   GoRoute(
                     path: 'hotels',

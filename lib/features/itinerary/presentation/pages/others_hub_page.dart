@@ -16,6 +16,12 @@ class OthersHubPage extends StatelessWidget {
         '/others/itinerary',
       ),
       (
+        'Vouchers',
+        'Confirmed hotels, cruise, flights & services',
+        LucideIcons.ticket,
+        '/others/vouchers',
+      ),
+      (
         'Hotels & cruise',
         'Accommodations from the package',
         LucideIcons.building2,

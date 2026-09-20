@@ -20,8 +20,15 @@ class DayItinerary extends Equatable {
   final List<String> details;
 
   @override
-  List<Object?> get props =>
-      [day, title, dateLabel, meals, overnight, summary, details];
+  List<Object?> get props => [
+    day,
+    title,
+    dateLabel,
+    meals,
+    overnight,
+    summary,
+    details,
+  ];
 }
 
 const tripItinerary = <DayItinerary>[
@@ -209,7 +216,8 @@ const packageExclusions = <String>[
 
 class PackageCosts {
   static const usdPerPax = 379.0;
-  static const nprPackageRateNote = 'USD 379/pax @ NPR 153 + 3 = NPR 59,124/pax';
+  static const nprPackageRateNote =
+      'USD 379/pax @ NPR 153 + 3 = NPR 59,124/pax';
   static const internationalTicketNpr = 84130.0;
   static const domesticTicketNpr = 5889.0;
   static const totalNpr = 149143.0;
