@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
+import 'package:vietnam_handbook/features/shopping/domain/entities/shopping_item.dart';
+import 'package:vietnam_handbook/features/shopping/domain/repositories/shopping_repository.dart';
+import 'package:vietnam_handbook/features/shopping/domain/shopping_text.dart';
+import 'package:vietnam_handbook/injection.dart';
 
 class OthersHubPage extends StatelessWidget {
   const OthersHubPage({super.key});
@@ -46,21 +50,30 @@ class OthersHubPage extends StatelessWidget {
         '/others/tipping',
       ),
       (
+        'Shopping list',
+        shoppingListEmptySummary,
+        LucideIcons.shoppingBag,
+        '/others/shopping',
+      ),
+      (
         'FX rates',
         'Edit offline conversion rates',
         LucideIcons.badgeDollarSign,
         '/others/rates',
       ),
-      (
-        'Settings',
-        'Theme, colors, and other preferences',
-        LucideIcons.settings,
-        '/others/settings',
-      ),
     ];
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Others')),
+      appBar: AppBar(
+        title: const Text('Others'),
+        actions: [
+          IconButton(
+            tooltip: 'Settings',
+            icon: const Icon(LucideIcons.settings),
+            onPressed: () => context.push('/others/settings'),
+          ),
+        ],
+      ),
       body: ListView.separated(
         padding: const EdgeInsets.all(16),
         itemCount: items.length,
@@ -87,7 +100,9 @@ class OthersHubPage extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(item.$1),
-                        Text(item.$2, style: theme.textTheme.muted),
+                        item.$4 == '/others/shopping'
+                            ? const _ShoppingHubSubtitle()
+                            : Text(item.$2, style: theme.textTheme.muted),
                       ],
                     ),
                   ),
@@ -102,6 +117,24 @@ class OthersHubPage extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+}
+
+class _ShoppingHubSubtitle extends StatelessWidget {
+  const _ShoppingHubSubtitle();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = ShadTheme.of(context);
+    return StreamBuilder<List<ShoppingItem>>(
+      stream: getIt<ShoppingRepository>().watchAll(),
+      builder: (context, snapshot) {
+        return Text(
+          shoppingListSummary(snapshot.data ?? const []),
+          style: theme.textTheme.muted,
+        );
+      },
     );
   }
 }

@@ -11,7 +11,7 @@ class AppSettings extends Equatable {
   final AppThemeMode themeMode;
   final String colorScheme;
 
-  static const defaultColorScheme = 'zinc';
+  static const defaultColorScheme = 'orange';
 
   static const colorSchemes = [
     'blue',

@@ -9,4 +9,5 @@ class HiveBoxes {
   static const expenses = 'expenses';
   static const settings = 'app_settings';
   static const tippingRates = 'tipping_rates';
+  static const shoppingItems = 'shopping_items';
 }

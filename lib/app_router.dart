@@ -15,6 +15,7 @@ import 'package:vietnam_handbook/features/itinerary/presentation/pages/others_hu
 import 'package:vietnam_handbook/features/itinerary/presentation/pages/vouchers_page.dart';
 import 'package:vietnam_handbook/features/phrases/presentation/pages/phrases_page.dart';
 import 'package:vietnam_handbook/features/settings/presentation/pages/settings_page.dart';
+import 'package:vietnam_handbook/features/shopping/presentation/pages/shopping_list_page.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>(
   debugLabel: 'root',
@@ -89,6 +90,11 @@ GoRouter createRouter() {
                     path: 'tipping',
                     parentNavigatorKey: _rootNavigatorKey,
                     builder: (context, state) => const TippingPage(),
+                  ),
+                  GoRoute(
+                    path: 'shopping',
+                    parentNavigatorKey: _rootNavigatorKey,
+                    builder: (context, state) => const ShoppingListPage(),
                   ),
                   GoRoute(
                     path: 'hotels',

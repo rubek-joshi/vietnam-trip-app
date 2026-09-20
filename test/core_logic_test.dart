@@ -5,6 +5,9 @@ import 'package:vietnam_handbook/features/budget/domain/entities/budget_entities
 import 'package:vietnam_handbook/features/itinerary/domain/entities/tipping_rate_preset.dart';
 import 'package:vietnam_handbook/features/itinerary/presentation/cubit/tipping_cubit.dart';
 import 'package:vietnam_handbook/features/settings/domain/entities/app_settings.dart';
+import 'package:vietnam_handbook/features/shopping/domain/entities/shopping_item.dart';
+import 'package:vietnam_handbook/features/shopping/domain/shopping_text.dart';
+import 'package:vietnam_handbook/features/shopping/presentation/cubit/shopping_cubit.dart';
 
 void main() {
   group('FxRates', () {
@@ -121,7 +124,7 @@ void main() {
       expect(restored.colorScheme, 'rose');
     });
 
-    test('falls back to system theme and zinc on invalid json', () {
+    test('falls back to system theme and orange on invalid json', () {
       final restored = AppSettings.fromJson({
         'themeMode': 'neon',
         'colorScheme': 'not-a-scheme',
@@ -134,12 +137,21 @@ void main() {
   group('TippingState', () {
     test('defaults to USD 1.5 per person for 9 people', () {
       const state = TippingState(isLoading: false);
+      expect(state.pax, TippingCubit.defaultPax);
       expect(state.pax, 9);
       expect(state.perPersonUsd, 1.5);
       expect(state.totalUsd, 13.5);
       expect(state.isPreset(TippingCubit.halfDayUsd), isTrue);
       expect(state.totalVnd, closeTo(13.5 * FxRates.defaults.usdToVnd, 0.01));
       expect(state.totalNpr, closeTo(13.5 * FxRates.defaults.usdToNpr, 0.01));
+    });
+
+    test('session people count can change totals without persisting', () {
+      const fewer = TippingState(pax: 8, isLoading: false);
+      const more = TippingState(pax: 10, isLoading: false);
+      expect(fewer.totalUsd, 12);
+      expect(more.totalUsd, 15);
+      expect(const TippingState(isLoading: false).pax, 9);
     });
 
     test('full-day preset is USD 27 for the group', () {
@@ -192,6 +204,87 @@ void main() {
       );
       final restored = TippingRatePreset.fromJson(preset.toJson());
       expect(restored, preset);
+    });
+  });
+
+  group('ShoppingItem', () {
+    test('round-trips title, note, and bought timestamp', () {
+      final item = ShoppingItem(
+        id: 'hat',
+        title: 'Non La',
+        bought: true,
+        note: 'Size M · Old Quarter',
+        order: 2,
+        boughtAt: DateTime.utc(2026, 9, 23, 10, 30),
+      );
+      final restored = ShoppingItem.fromJson(item.toJson());
+      expect(restored.id, item.id);
+      expect(restored.title, item.title);
+      expect(restored.bought, isTrue);
+      expect(restored.note, 'Size M · Old Quarter');
+      expect(restored.order, 2);
+      expect(restored.boughtAt, item.boughtAt);
+    });
+  });
+
+  group('ShoppingState', () {
+    test('splits to-buy and bought lists', () {
+      const toBuy = ShoppingItem(id: 'a', title: 'Coffee', order: 1);
+      const bought = ShoppingItem(
+        id: 'b',
+        title: 'Hat',
+        bought: true,
+        note: 'Blue',
+        order: 0,
+      );
+      const state = ShoppingState(items: [bought, toBuy], isLoading: false);
+      expect(state.toBuy, [toBuy]);
+      expect(state.bought, [bought]);
+      expect(state.bought.first.note, 'Blue');
+      expect(state.nextToBuyOrder, 2);
+    });
+
+    test('sorts bought items newest first', () {
+      final older = ShoppingItem(
+        id: 'old',
+        title: 'Older',
+        bought: true,
+        boughtAt: DateTime.utc(2026, 9, 20),
+      );
+      final newer = ShoppingItem(
+        id: 'new',
+        title: 'Newer',
+        bought: true,
+        boughtAt: DateTime.utc(2026, 9, 22),
+      );
+      final state = ShoppingState(items: [older, newer], isLoading: false);
+      expect(state.bought.map((e) => e.id).toList(), ['new', 'old']);
+    });
+  });
+
+  group('capitalizeFirstWord', () {
+    test('capitalizes the first letter of the first word', () {
+      expect(capitalizeFirstWord('coffee beans'), 'Coffee beans');
+      expect(capitalizeFirstWord('  nón lá'), '  Nón lá');
+      expect(capitalizeFirstWord('Already'), 'Already');
+      expect(capitalizeFirstWord(''), '');
+    });
+  });
+
+  group('shoppingListSummary', () {
+    test('keeps the description when the list is empty', () {
+      expect(shoppingListSummary(const []), shoppingListEmptySummary);
+    });
+
+    test('shows bought over total and remaining after items exist', () {
+      expect(
+        shoppingListSummary(const [
+          ShoppingItem(id: '1', title: 'Hat', bought: true),
+          ShoppingItem(id: '2', title: 'Coffee'),
+          ShoppingItem(id: '3', title: 'Magnet'),
+        ]),
+        '1/3 bought · 2 remaining',
+      );
     });
   });
 }

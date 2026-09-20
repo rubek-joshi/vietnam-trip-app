@@ -19,6 +19,9 @@ import 'package:vietnam_handbook/features/phrases/presentation/cubit/phrases_cub
 import 'package:vietnam_handbook/features/settings/data/repositories/settings_repository_impl.dart';
 import 'package:vietnam_handbook/features/settings/domain/repositories/settings_repository.dart';
 import 'package:vietnam_handbook/features/settings/presentation/cubit/settings_cubit.dart';
+import 'package:vietnam_handbook/features/shopping/data/repositories/shopping_repository_impl.dart';
+import 'package:vietnam_handbook/features/shopping/domain/repositories/shopping_repository.dart';
+import 'package:vietnam_handbook/features/shopping/presentation/cubit/shopping_cubit.dart';
 
 final getIt = GetIt.instance;
 
@@ -31,6 +34,7 @@ Future<void> initDependencies() async {
   final budgetBoxes = await openBudgetBoxes();
   final settingsBox = await openSettingsBox();
   final tippingRatesBox = await openTippingRatesBox();
+  final shoppingBox = await openShoppingBox();
 
   getIt
     ..registerLazySingleton<FxRatesRepository>(
@@ -65,12 +69,16 @@ Future<void> initDependencies() async {
     ..registerLazySingleton<TippingRatesRepository>(
       () => TippingRatesRepositoryImpl(tippingRatesBox),
     )
+    ..registerLazySingleton<ShoppingRepository>(
+      () => ShoppingRepositoryImpl(shoppingBox),
+    )
     ..registerFactory(
       () => TippingCubit(
         fxRatesRepository: getIt(),
         tippingRatesRepository: getIt(),
       ),
     )
+    ..registerFactory(() => ShoppingCubit(getIt()))
     ..registerFactory(
       () => BudgetCubit(budgetRepository: getIt(), fxRatesRepository: getIt()),
     )

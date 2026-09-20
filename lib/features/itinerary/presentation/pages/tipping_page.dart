@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:vietnam_handbook/core/fx/currency_input_formatter.dart';
 import 'package:vietnam_handbook/core/fx/fx_rates.dart';
+import 'package:vietnam_handbook/core/widgets/confirm_remove_dialog.dart';
 import 'package:vietnam_handbook/features/itinerary/domain/entities/tipping_rate_preset.dart';
 import 'package:vietnam_handbook/features/itinerary/presentation/cubit/tipping_cubit.dart';
 import 'package:vietnam_handbook/injection.dart';
@@ -68,15 +69,45 @@ class _TippingViewState extends State<_TippingView> {
             children: [
               Text(
                 'Compulsory tipping is USD 3 per person for a full day, '
-                'or USD 1.5 for a half day / airport transfer. Totals are '
-                'always for ${state.pax} people.',
+                'or USD 1.5 for a half day / airport transfer. People count '
+                'starts at ${TippingCubit.defaultPax} each time you open this page.',
                 style: theme.textTheme.muted,
+              ),
+              const SizedBox(height: 16),
+              ShadCard(
+                title: const Text('People'),
+                description: Text(
+                  'Session only · default ${TippingCubit.defaultPax}',
+                  style: theme.textTheme.muted,
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      ShadIconButton.outline(
+                        enabled: state.pax > TippingCubit.minPax,
+                        icon: const Icon(LucideIcons.minus, size: 18),
+                        onPressed: context.read<TippingCubit>().decrementPax,
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Text('${state.pax}', style: theme.textTheme.h2),
+                      ),
+                      ShadIconButton.outline(
+                        enabled: state.pax < TippingCubit.maxPax,
+                        icon: const Icon(LucideIcons.plus, size: 18),
+                        onPressed: context.read<TippingCubit>().incrementPax,
+                      ),
+                    ],
+                  ),
+                ),
               ),
               const SizedBox(height: 16),
               ShadCard(
                 title: const Text('Tip per person'),
                 description: Text(
-                  'USD · ${state.pax} adults',
+                  'USD · ${state.pax} ${state.pax == 1 ? 'adult' : 'adults'}',
                   style: theme.textTheme.muted,
                 ),
                 child: Padding(
@@ -123,7 +154,7 @@ class _TippingViewState extends State<_TippingView> {
               ),
               const SizedBox(height: 16),
               ShadCard(
-                title: const Text('Total for 9 people'),
+                title: Text('Total for ${state.pax} people'),
                 description: Text(
                   '${CurrencyFormatter.format(state.perPersonUsd, CurrencyCode.usd)} × ${state.pax}',
                   style: theme.textTheme.muted,
@@ -425,9 +456,19 @@ class _OverrideRatesFormState extends State<_OverrideRatesForm> {
                           _fillFrom(preset.rates);
                           context.read<TippingCubit>().selectPreset(preset);
                         },
-                        onDelete: () => context
-                            .read<TippingCubit>()
-                            .deletePreset(preset.id),
+                        onDelete: () async {
+                          final confirmed = await confirmRemove(
+                            context,
+                            title: 'Remove exchange rate?',
+                            description:
+                                '“${preset.label}” will be deleted from saved exchange rates.',
+                          );
+                          if (confirmed && context.mounted) {
+                            await context.read<TippingCubit>().deletePreset(
+                              preset.id,
+                            );
+                          }
+                        },
                       ),
                   ],
                 ),

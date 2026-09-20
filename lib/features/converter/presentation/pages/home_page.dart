@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:vietnam_handbook/core/fx/currency_input_formatter.dart';
 import 'package:vietnam_handbook/core/fx/fx_rates.dart';
+import 'package:vietnam_handbook/core/widgets/confirm_remove_dialog.dart';
 import 'package:vietnam_handbook/features/converter/domain/entities/saved_conversion.dart';
 import 'package:vietnam_handbook/features/converter/presentation/cubit/converter_cubit.dart';
 import 'package:vietnam_handbook/injection.dart';
@@ -162,7 +163,7 @@ class _HomeViewState extends State<_HomeView> {
                     const SizedBox(height: 16),
                     ShadInput(
                       controller: _labelCtrl,
-                      placeholder: const Text('Label (e.g. Lunch tip)'),
+                      placeholder: const Text('Label (e.g. 1k Nepali, minimum guide full day tip)'),
                     ),
                     const SizedBox(height: 12),
                     SizedBox(
@@ -183,7 +184,12 @@ class _HomeViewState extends State<_HomeView> {
               const SizedBox(height: 20),
               Row(
                 children: [
-                  Text('Saved', style: theme.textTheme.h4),
+                  Text(
+                    state.history.isEmpty
+                        ? 'Saved'
+                        : 'Saved (${state.history.length})',
+                    style: theme.textTheme.h4,
+                  ),
                   const Spacer(),
                   _SortControls(state: state),
                 ],
@@ -312,9 +318,15 @@ class _HistoryTile extends StatelessWidget {
                 Text(item.label, style: theme.textTheme.large),
                 const SizedBox(height: 4),
                 Text(
-                  '${CurrencyFormatter.format(item.usd, CurrencyCode.usd)} · '
-                  '${CurrencyFormatter.format(item.npr, CurrencyCode.npr)} · '
-                  '${CurrencyFormatter.format(item.vnd, CurrencyCode.vnd)}',
+                  CurrencyFormatter.format(item.usd, CurrencyCode.usd),
+                  style: theme.textTheme.muted,
+                ),
+                Text(
+                  CurrencyFormatter.format(item.npr, CurrencyCode.npr),
+                  style: theme.textTheme.muted,
+                ),
+                Text(
+                  CurrencyFormatter.format(item.vnd, CurrencyCode.vnd),
                   style: theme.textTheme.muted,
                 ),
               ],
@@ -326,8 +338,17 @@ class _HistoryTile extends StatelessWidget {
           ),
           ShadIconButton.ghost(
             icon: const Icon(LucideIcons.trash2, size: 18),
-            onPressed: () =>
-                context.read<ConverterCubit>().deleteSaved(item.id),
+            onPressed: () async {
+              final confirmed = await confirmRemove(
+                context,
+                title: 'Remove saved conversion?',
+                description:
+                    '“${item.label}” will be deleted from saved conversions.',
+              );
+              if (confirmed && context.mounted) {
+                await context.read<ConverterCubit>().deleteSaved(item.id);
+              }
+            },
           ),
         ],
       ),

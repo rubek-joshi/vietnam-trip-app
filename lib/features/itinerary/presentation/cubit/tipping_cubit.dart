@@ -12,6 +12,7 @@ import 'package:vietnam_handbook/features/itinerary/domain/repositories/tipping_
 class TippingState extends Equatable {
   const TippingState({
     this.perPersonUsd = TippingCubit.halfDayUsd,
+    this.pax = TippingCubit.defaultPax,
     this.appRates = FxRates.defaults,
     this.overrideRates,
     this.activePresetId,
@@ -20,13 +21,12 @@ class TippingState extends Equatable {
   });
 
   final double perPersonUsd;
+  final int pax;
   final FxRates appRates;
   final FxRates? overrideRates;
   final String? activePresetId;
   final List<TippingRatePreset> presets;
   final bool isLoading;
-
-  int get pax => PackageCosts.groupSize;
 
   bool get isOverridden => overrideRates != null;
 
@@ -52,6 +52,7 @@ class TippingState extends Equatable {
 
   TippingState copyWith({
     double? perPersonUsd,
+    int? pax,
     FxRates? appRates,
     FxRates? overrideRates,
     bool clearOverride = false,
@@ -62,6 +63,7 @@ class TippingState extends Equatable {
   }) {
     return TippingState(
       perPersonUsd: perPersonUsd ?? this.perPersonUsd,
+      pax: pax ?? this.pax,
       appRates: appRates ?? this.appRates,
       overrideRates: clearOverride
           ? null
@@ -77,6 +79,7 @@ class TippingState extends Equatable {
   @override
   List<Object?> get props => [
     perPersonUsd,
+    pax,
     appRates,
     overrideRates,
     activePresetId,
@@ -95,6 +98,9 @@ class TippingCubit extends Cubit<TippingState> {
 
   static const halfDayUsd = 1.5;
   static const fullDayUsd = 3.0;
+  static const defaultPax = PackageCosts.groupSize;
+  static const minPax = 1;
+  static const maxPax = 99;
 
   final FxRatesRepository _fxRatesRepository;
   final TippingRatesRepository _tippingRatesRepository;
@@ -122,6 +128,16 @@ class TippingCubit extends Cubit<TippingState> {
     _ratesSub = _fxRatesRepository.watchRates().listen((rates) {
       emit(state.copyWith(appRates: rates));
     });
+  }
+
+  void incrementPax() {
+    if (state.pax >= maxPax) return;
+    emit(state.copyWith(pax: state.pax + 1));
+  }
+
+  void decrementPax() {
+    if (state.pax <= minPax) return;
+    emit(state.copyWith(pax: state.pax - 1));
   }
 
   void setPerPersonUsd(double amount) {

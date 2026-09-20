@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:vietnam_handbook/core/widgets/day_pager.dart';
+import 'package:vietnam_handbook/core/widgets/confirm_remove_dialog.dart';
 import 'package:vietnam_handbook/features/checklist/domain/entities/checklist_item.dart';
 import 'package:vietnam_handbook/features/checklist/presentation/cubit/checklist_cubit.dart';
 import 'package:vietnam_handbook/injection.dart';
@@ -188,7 +189,16 @@ class _ChecklistTile extends StatelessWidget {
             ),
             ShadIconButton.ghost(
               icon: const Icon(LucideIcons.trash2, size: 18),
-              onPressed: () => context.read<ChecklistCubit>().remove(item.id),
+              onPressed: () async {
+                final confirmed = await confirmRemove(
+                  context,
+                  description:
+                      '“${item.title}” will be deleted from this day’s checklist.',
+                );
+                if (confirmed && context.mounted) {
+                  await context.read<ChecklistCubit>().remove(item.id);
+                }
+              },
             ),
           ],
         ],

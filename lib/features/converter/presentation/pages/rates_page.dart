@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:vietnam_handbook/core/fx/fx_rates.dart';
+import 'package:vietnam_handbook/core/widgets/confirm_remove_dialog.dart';
 import 'package:vietnam_handbook/features/converter/presentation/cubit/converter_cubit.dart';
 import 'package:vietnam_handbook/injection.dart';
 
@@ -100,7 +102,7 @@ class _RatesViewState extends State<_RatesView> {
                     SizedBox(
                       width: double.infinity,
                       child: ShadButton(
-                        onPressed: () {
+                        onPressed: () async {
                           final npr = double.tryParse(_nprCtrl.text);
                           final vnd = double.tryParse(_vndCtrl.text);
                           if (npr == null ||
@@ -114,9 +116,10 @@ class _RatesViewState extends State<_RatesView> {
                             );
                             return;
                           }
-                          context.read<ConverterCubit>().updateRates(
-                                FxRates(usdToNpr: npr, usdToVnd: vnd),
-                              );
+                          await context.read<ConverterCubit>().updateRates(
+                            FxRates(usdToNpr: npr, usdToVnd: vnd),
+                          );
+                          if (context.mounted) context.pop();
                         },
                         child: const Text('Save rates'),
                       ),
@@ -124,7 +127,15 @@ class _RatesViewState extends State<_RatesView> {
                     const SizedBox(height: 8),
                     ShadButton.outline(
                       width: double.infinity,
-                      onPressed: () {
+                      onPressed: () async {
+                        final confirmed = await confirmRemove(
+                          context,
+                          title: 'Reset to defaults?',
+                          description:
+                              'This will restore 1 USD = ${CurrencyFormatter.grouped(FxRates.defaults.usdToNpr, CurrencyCode.npr)} NPR and ${CurrencyFormatter.grouped(FxRates.defaults.usdToVnd, CurrencyCode.vnd)} VND.',
+                          confirmLabel: 'Reset',
+                        );
+                        if (!confirmed || !context.mounted) return;
                         _nprCtrl.text =
                             FxRates.defaults.usdToNpr.toStringAsFixed(2);
                         _vndCtrl.text =

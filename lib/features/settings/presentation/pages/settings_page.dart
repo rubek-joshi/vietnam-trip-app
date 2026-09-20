@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
+import 'package:vietnam_handbook/core/widgets/confirm_remove_dialog.dart';
 import 'package:vietnam_handbook/features/settings/domain/entities/app_settings.dart';
 import 'package:vietnam_handbook/features/settings/presentation/cubit/settings_cubit.dart';
 
@@ -126,7 +127,18 @@ class SettingsPage extends StatelessWidget {
               const SizedBox(height: 24),
               ShadButton.outline(
                 width: double.infinity,
-                onPressed: () => context.read<SettingsCubit>().reset(),
+                onPressed: () async {
+                  final confirmed = await confirmRemove(
+                    context,
+                    title: 'Reset appearance?',
+                    description:
+                        'Theme mode and color scheme will return to system and orange.',
+                    confirmLabel: 'Reset',
+                  );
+                  if (confirmed && context.mounted) {
+                    await context.read<SettingsCubit>().reset();
+                  }
+                },
                 child: const Text('Reset appearance to defaults'),
               ),
             ],

@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:vietnam_handbook/core/fx/fx_rates.dart';
+import 'package:vietnam_handbook/core/widgets/confirm_remove_dialog.dart';
 import 'package:vietnam_handbook/features/budget/domain/entities/budget_entities.dart';
 import 'package:vietnam_handbook/features/budget/presentation/cubit/budget_cubit.dart';
 import 'package:vietnam_handbook/injection.dart';
@@ -66,10 +67,14 @@ class _BudgetView extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       if (!snap.config.configured)
-                        ShadAlert(
-                          title: const Text('Set your trip budget'),
-                          description: const Text(
-                            'Tap the sliders icon to configure initial USD (and optional VND).',
+                        InkWell(
+                          onTap: () => _showConfigSheet(context),
+                          borderRadius: BorderRadius.circular(8),
+                          child: const ShadAlert(
+                            title: Text('Set your trip budget'),
+                            description: Text(
+                              'Tap here to configure initial USD (and optional VND).',
+                            ),
                           ),
                         )
                       else if (snap.isOverspent)
@@ -206,8 +211,21 @@ class _WalletPane extends StatelessWidget {
                     ),
                     ShadIconButton.ghost(
                       icon: const Icon(LucideIcons.trash2, size: 18),
-                      onPressed: () =>
-                          context.read<BudgetCubit>().deleteExchange(e.id),
+                      onPressed: () async {
+                        final confirmed = await confirmRemove(
+                          context,
+                          title: 'Remove exchange?',
+                          description:
+                              '${CurrencyFormatter.format(e.usdAmount, CurrencyCode.usd)} → '
+                              '${CurrencyFormatter.format(e.vndReceived, CurrencyCode.vnd)} '
+                              'will be deleted from exchanges.',
+                        );
+                        if (confirmed && context.mounted) {
+                          await context.read<BudgetCubit>().deleteExchange(
+                            e.id,
+                          );
+                        }
+                      },
                     ),
                   ],
                 ),
@@ -284,13 +302,46 @@ class _ExpenseTile extends StatelessWidget {
           ),
           ShadIconButton.ghost(
             icon: const Icon(LucideIcons.trash2, size: 18),
-            onPressed: () =>
-                context.read<BudgetCubit>().deleteExpense(expense.id),
+            onPressed: () async {
+              final confirmed = await confirmRemove(
+                context,
+                title: 'Remove expense?',
+                description:
+                    '“${expense.title}” will be deleted from expenses.',
+              );
+              if (confirmed && context.mounted) {
+                await context.read<BudgetCubit>().deleteExpense(expense.id);
+              }
+            },
           ),
         ],
       ),
     );
   }
+}
+
+class _FocusOnOpen extends StatefulWidget {
+  const _FocusOnOpen({required this.focusNode, required this.child});
+
+  final FocusNode focusNode;
+  final Widget child;
+
+  @override
+  State<_FocusOnOpen> createState() => _FocusOnOpenState();
+}
+
+class _FocusOnOpenState extends State<_FocusOnOpen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+      if (mounted) widget.focusNode.requestFocus();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
 
 Future<void> _showConfigSheet(BuildContext context) async {
@@ -366,63 +417,69 @@ Future<void> _showExchangeSheet(BuildContext context) async {
   final usdCtrl = TextEditingController();
   final vndCtrl = TextEditingController();
   final noteCtrl = TextEditingController();
+  final usdFocus = FocusNode();
 
   await showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     builder: (ctx) {
-      return Padding(
-        padding: EdgeInsets.only(
-          left: 16,
-          right: 16,
-          top: 16,
-          bottom: MediaQuery.viewInsetsOf(ctx).bottom + 16,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text('Exchange USD → VND', style: ShadTheme.of(ctx).textTheme.h4),
-            const SizedBox(height: 12),
-            ShadInput(
-              controller: usdCtrl,
-              placeholder: const Text('USD given'),
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
+      return _FocusOnOpen(
+        focusNode: usdFocus,
+        child: Padding(
+          padding: EdgeInsets.only(
+            left: 16,
+            right: 16,
+            top: 16,
+            bottom: MediaQuery.viewInsetsOf(ctx).bottom + 16,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text('Exchange USD → VND', style: ShadTheme.of(ctx).textTheme.h4),
+              const SizedBox(height: 12),
+              ShadInput(
+                controller: usdCtrl,
+                focusNode: usdFocus,
+                autofocus: true,
+                placeholder: const Text('USD given'),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                leading: const Text('USD'),
               ),
-              leading: const Text('USD'),
-            ),
-            const SizedBox(height: 8),
-            ShadInput(
-              controller: vndCtrl,
-              placeholder: const Text('VND received'),
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
+              const SizedBox(height: 8),
+              ShadInput(
+                controller: vndCtrl,
+                placeholder: const Text('VND received'),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                leading: const Text('VND'),
               ),
-              leading: const Text('VND'),
-            ),
-            const SizedBox(height: 8),
-            ShadInput(
-              controller: noteCtrl,
-              placeholder: const Text('Note (optional)'),
-            ),
-            const SizedBox(height: 12),
-            ShadButton(
-              onPressed: () {
-                final usd = double.tryParse(usdCtrl.text) ?? 0;
-                final vnd = double.tryParse(vndCtrl.text) ?? 0;
-                if (usd <= 0 || vnd <= 0) return;
-                cubit.addExchange(
-                  usdAmount: usd,
-                  vndReceived: vnd,
-                  date: DateTime.now(),
-                  note: noteCtrl.text,
-                );
-                Navigator.pop(ctx);
-              },
-              child: const Text('Save exchange'),
-            ),
-          ],
+              const SizedBox(height: 8),
+              ShadInput(
+                controller: noteCtrl,
+                placeholder: const Text('Note (optional)'),
+              ),
+              const SizedBox(height: 12),
+              ShadButton(
+                onPressed: () {
+                  final usd = double.tryParse(usdCtrl.text) ?? 0;
+                  final vnd = double.tryParse(vndCtrl.text) ?? 0;
+                  if (usd <= 0 || vnd <= 0) return;
+                  cubit.addExchange(
+                    usdAmount: usd,
+                    vndReceived: vnd,
+                    date: DateTime.now(),
+                    note: noteCtrl.text,
+                  );
+                  Navigator.pop(ctx);
+                },
+                child: const Text('Save exchange'),
+              ),
+            ],
+          ),
         ),
       );
     },
@@ -430,6 +487,7 @@ Future<void> _showExchangeSheet(BuildContext context) async {
   usdCtrl.dispose();
   vndCtrl.dispose();
   noteCtrl.dispose();
+  usdFocus.dispose();
 }
 
 Future<void> _showExpenseSheet(
@@ -448,88 +506,95 @@ Future<void> _showExpenseSheet(
     text: existing == null ? '' : existing.amount.toString(),
   );
   final noteCtrl = TextEditingController(text: existing?.note ?? '');
+  final titleFocus = FocusNode();
   var liveNpr = existing == null ? 0.0 : rates.toNpr(existing.amount, code);
 
   await showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     builder: (ctx) {
-      return StatefulBuilder(
-        builder: (ctx, setModalState) {
-          return Padding(
-            padding: EdgeInsets.only(
-              left: 16,
-              right: 16,
-              top: 16,
-              bottom: MediaQuery.viewInsetsOf(ctx).bottom + 16,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  existing == null ? 'Add expense' : 'Edit expense',
-                  style: ShadTheme.of(ctx).textTheme.h4,
-                ),
-                const SizedBox(height: 12),
-                ShadInput(
-                  controller: titleCtrl,
-                  placeholder: const Text('Title'),
-                ),
-                const SizedBox(height: 8),
-                ShadInput(
-                  controller: amountCtrl,
-                  placeholder: Text(code.name.toUpperCase()),
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
+      return _FocusOnOpen(
+        focusNode: titleFocus,
+        child: StatefulBuilder(
+          builder: (ctx, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 16,
+                right: 16,
+                top: 16,
+                bottom: MediaQuery.viewInsetsOf(ctx).bottom + 16,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    existing == null ? 'Add expense' : 'Edit expense',
+                    style: ShadTheme.of(ctx).textTheme.h4,
                   ),
-                  inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
-                  ],
-                  leading: Text(code.name.toUpperCase()),
-                  onChanged: (v) {
-                    final amt = double.tryParse(v) ?? 0;
-                    setModalState(() {
-                      liveNpr = rates.toNpr(amt, code);
-                    });
-                  },
-                ),
-                const SizedBox(height: 8),
-                ShadBadge(
-                  child: Text(
-                    '≈ ${CurrencyFormatter.format(liveNpr, CurrencyCode.npr)}',
+                  const SizedBox(height: 12),
+                  ShadInput(
+                    controller: titleCtrl,
+                    focusNode: titleFocus,
+                    autofocus: true,
+                    placeholder: const Text('Title'),
                   ),
-                ),
-                const SizedBox(height: 8),
-                ShadInput(
-                  controller: noteCtrl,
-                  placeholder: const Text('Note (optional)'),
-                ),
-                const SizedBox(height: 12),
-                ShadButton(
-                  onPressed: () {
-                    final amt = double.tryParse(amountCtrl.text) ?? 0;
-                    if (titleCtrl.text.trim().isEmpty || amt <= 0) return;
-                    cubit.addExpense(
-                      id: existing?.id,
-                      title: titleCtrl.text,
-                      amount: amt,
-                      currency: currency,
-                      date: existing?.date ?? DateTime.now(),
-                      note: noteCtrl.text,
-                    );
-                    Navigator.pop(ctx);
-                  },
-                  child: const Text('Save'),
-                ),
-              ],
-            ),
-          );
-        },
+                  const SizedBox(height: 8),
+                  ShadInput(
+                    controller: amountCtrl,
+                    placeholder: Text(code.name.toUpperCase()),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                    ],
+                    leading: Text(code.name.toUpperCase()),
+                    onChanged: (v) {
+                      final amt = double.tryParse(v) ?? 0;
+                      setModalState(() {
+                        liveNpr = rates.toNpr(amt, code);
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  ShadBadge(
+                    child: Text(
+                      '≈ ${CurrencyFormatter.format(liveNpr, CurrencyCode.npr)}',
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ShadInput(
+                    controller: noteCtrl,
+                    placeholder: const Text('Note (optional)'),
+                  ),
+                  const SizedBox(height: 12),
+                  ShadButton(
+                    onPressed: () {
+                      final amt = double.tryParse(amountCtrl.text) ?? 0;
+                      if (titleCtrl.text.trim().isEmpty || amt <= 0) return;
+                      cubit.addExpense(
+                        id: existing?.id,
+                        title: titleCtrl.text,
+                        amount: amt,
+                        currency: currency,
+                        date: existing?.date ?? DateTime.now(),
+                        note: noteCtrl.text,
+                      );
+                      Navigator.pop(ctx);
+                    },
+                    child: const Text('Save'),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
       );
     },
   );
   titleCtrl.dispose();
   amountCtrl.dispose();
   noteCtrl.dispose();
+  titleFocus.dispose();
 }
