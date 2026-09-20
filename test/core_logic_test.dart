@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:vietnam_handbook/core/fx/fx_rates.dart';
 import 'package:vietnam_handbook/core/trip/trip_dates.dart';
 import 'package:vietnam_handbook/features/budget/domain/entities/budget_entities.dart';
+import 'package:vietnam_handbook/features/itinerary/domain/entities/tipping_rate_preset.dart';
 import 'package:vietnam_handbook/features/itinerary/presentation/cubit/tipping_cubit.dart';
 import 'package:vietnam_handbook/features/settings/domain/entities/app_settings.dart';
 
@@ -148,6 +149,49 @@ void main() {
       );
       expect(state.totalUsd, 27);
       expect(state.isPreset(TippingCubit.fullDayUsd), isTrue);
+    });
+
+    test('page override rates convert totals without changing app rates', () {
+      const override = FxRates(usdToNpr: 140, usdToVnd: 25000);
+      const state = TippingState(
+        perPersonUsd: TippingCubit.halfDayUsd,
+        overrideRates: override,
+        isLoading: false,
+      );
+      expect(state.isOverridden, isTrue);
+      expect(state.rateSourceLabel, 'Page override');
+      expect(state.appRates, FxRates.defaults);
+      expect(state.totalVnd, 13.5 * 25000);
+      expect(state.totalNpr, 13.5 * 140);
+    });
+
+    test('named preset label is used while that rate is active', () {
+      const rates = FxRates(usdToNpr: 148, usdToVnd: 25500);
+      const preset = TippingRatePreset(
+        id: 'street',
+        label: 'Street cash',
+        rates: rates,
+      );
+      const state = TippingState(
+        overrideRates: rates,
+        activePresetId: 'street',
+        presets: [preset],
+        isLoading: false,
+      );
+      expect(state.rateSourceLabel, 'Street cash');
+      expect(state.rates, rates);
+    });
+  });
+
+  group('TippingRatePreset', () {
+    test('round-trips rates and label', () {
+      const preset = TippingRatePreset(
+        id: 'hotel',
+        label: 'Hotel desk',
+        rates: FxRates(usdToNpr: 150.25, usdToVnd: 26100),
+      );
+      final restored = TippingRatePreset.fromJson(preset.toJson());
+      expect(restored, preset);
     });
   });
 }

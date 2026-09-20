@@ -12,6 +12,8 @@ import 'package:vietnam_handbook/features/converter/domain/repositories/conversi
 import 'package:vietnam_handbook/features/converter/domain/repositories/fx_rates_repository.dart';
 import 'package:vietnam_handbook/features/converter/domain/usecases/convert_currency.dart';
 import 'package:vietnam_handbook/features/converter/presentation/cubit/converter_cubit.dart';
+import 'package:vietnam_handbook/features/itinerary/data/repositories/tipping_rates_repository_impl.dart';
+import 'package:vietnam_handbook/features/itinerary/domain/repositories/tipping_rates_repository.dart';
 import 'package:vietnam_handbook/features/itinerary/presentation/cubit/tipping_cubit.dart';
 import 'package:vietnam_handbook/features/phrases/presentation/cubit/phrases_cubit.dart';
 import 'package:vietnam_handbook/features/settings/data/repositories/settings_repository_impl.dart';
@@ -28,6 +30,7 @@ Future<void> initDependencies() async {
   final checklistBox = await openChecklistBox();
   final budgetBoxes = await openBudgetBoxes();
   final settingsBox = await openSettingsBox();
+  final tippingRatesBox = await openTippingRatesBox();
 
   getIt
     ..registerLazySingleton<FxRatesRepository>(
@@ -59,7 +62,15 @@ Future<void> initDependencies() async {
       ),
     )
     ..registerFactory(() => ChecklistCubit(getIt()))
-    ..registerFactory(() => TippingCubit(getIt()))
+    ..registerLazySingleton<TippingRatesRepository>(
+      () => TippingRatesRepositoryImpl(tippingRatesBox),
+    )
+    ..registerFactory(
+      () => TippingCubit(
+        fxRatesRepository: getIt(),
+        tippingRatesRepository: getIt(),
+      ),
+    )
     ..registerFactory(
       () => BudgetCubit(budgetRepository: getIt(), fxRatesRepository: getIt()),
     )
