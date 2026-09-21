@@ -3,6 +3,8 @@ import 'package:vietnam_handbook/core/fx/fx_rates.dart';
 import 'package:vietnam_handbook/core/trip/trip_dates.dart';
 import 'package:vietnam_handbook/features/budget/domain/entities/budget_entities.dart';
 import 'package:vietnam_handbook/features/itinerary/domain/entities/tipping_rate_preset.dart';
+import 'package:vietnam_handbook/features/notes/data/vietnam_notes_catalog.dart';
+import 'package:vietnam_handbook/features/notes/presentation/cubit/notes_cubit.dart';
 import 'package:vietnam_handbook/features/itinerary/presentation/cubit/tipping_cubit.dart';
 import 'package:vietnam_handbook/features/settings/domain/entities/app_settings.dart';
 import 'package:vietnam_handbook/features/shopping/domain/entities/shopping_item.dart';
@@ -268,6 +270,38 @@ void main() {
       expect(capitalizeFirstWord('  nón lá'), '  Nón lá');
       expect(capitalizeFirstWord('Already'), 'Already');
       expect(capitalizeFirstWord(''), '');
+    });
+  });
+
+  group('VietnamNotesCatalog', () {
+    test('lists circulating notes with local asset scans', () {
+      expect(VietnamNotesCatalog.notes, isNotEmpty);
+      expect(VietnamNotesCatalog.notes.first.amountVnd, 500000);
+      for (final note in VietnamNotesCatalog.notes) {
+        expect(note.variations, isNotEmpty);
+        for (final variation in note.variations) {
+          expect(variation.imageUrl, startsWith('assets/notes/'));
+          expect(variation.imageUrl, endsWith('.jpg'));
+          expect(variation.sourcePageUrl, contains('banknote.ws'));
+        }
+      }
+      final hundredThousand = VietnamNotesCatalog.notes.firstWhere(
+        (note) => note.amountVnd == 100000,
+      );
+      expect(hundredThousand.variations.length, greaterThan(2));
+    });
+  });
+
+  group('NotesState', () {
+    test('converts a note to USD and NPR with current rates', () {
+      const state = NotesState(
+        rates: FxRates(usdToNpr: 153.50, usdToVnd: 25960),
+        isLoading: false,
+      );
+      final note = VietnamNotesCatalog.notes.first;
+      final equivalent = state.equivalentFor(note);
+      expect(equivalent.usdText, r'$19.26');
+      expect(equivalent.nprText, 'NPR 2,956.47');
     });
   });
 

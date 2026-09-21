@@ -14,6 +14,12 @@ class OthersHubPage extends StatelessWidget {
     final theme = ShadTheme.of(context);
     final items = [
       (
+        'Vietnam notes',
+        'Dong banknotes with USD / NPR',
+        LucideIcons.banknote,
+        '/others/notes',
+      ),
+      (
         'Package costs',
         'USD / NPR breakdown',
         LucideIcons.receipt,

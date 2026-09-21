@@ -13,6 +13,7 @@ import 'package:vietnam_handbook/features/itinerary/presentation/pages/itinerary
 import 'package:vietnam_handbook/features/itinerary/presentation/pages/tipping_page.dart';
 import 'package:vietnam_handbook/features/itinerary/presentation/pages/others_hub_page.dart';
 import 'package:vietnam_handbook/features/itinerary/presentation/pages/vouchers_page.dart';
+import 'package:vietnam_handbook/features/notes/presentation/pages/notes_page.dart';
 import 'package:vietnam_handbook/features/phrases/presentation/pages/phrases_page.dart';
 import 'package:vietnam_handbook/features/settings/presentation/pages/settings_page.dart';
 import 'package:vietnam_handbook/features/shopping/presentation/pages/shopping_list_page.dart';
@@ -76,6 +77,11 @@ GoRouter createRouter() {
                 path: '/others',
                 builder: (context, state) => const OthersHubPage(),
                 routes: [
+                  GoRoute(
+                    path: 'notes',
+                    parentNavigatorKey: _rootNavigatorKey,
+                    builder: (context, state) => const NotesPage(),
+                  ),
                   GoRoute(
                     path: 'itinerary',
                     parentNavigatorKey: _rootNavigatorKey,

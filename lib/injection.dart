@@ -15,6 +15,7 @@ import 'package:vietnam_handbook/features/converter/presentation/cubit/converter
 import 'package:vietnam_handbook/features/itinerary/data/repositories/tipping_rates_repository_impl.dart';
 import 'package:vietnam_handbook/features/itinerary/domain/repositories/tipping_rates_repository.dart';
 import 'package:vietnam_handbook/features/itinerary/presentation/cubit/tipping_cubit.dart';
+import 'package:vietnam_handbook/features/notes/presentation/cubit/notes_cubit.dart';
 import 'package:vietnam_handbook/features/phrases/presentation/cubit/phrases_cubit.dart';
 import 'package:vietnam_handbook/features/settings/data/repositories/settings_repository_impl.dart';
 import 'package:vietnam_handbook/features/settings/domain/repositories/settings_repository.dart';
@@ -79,6 +80,7 @@ Future<void> initDependencies() async {
       ),
     )
     ..registerFactory(() => ShoppingCubit(getIt()))
+    ..registerFactory(() => NotesCubit(fxRatesRepository: getIt()))
     ..registerFactory(
       () => BudgetCubit(budgetRepository: getIt(), fxRatesRepository: getIt()),
     )
